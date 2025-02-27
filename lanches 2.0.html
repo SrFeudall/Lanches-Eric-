@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Lanchonete</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .menu-item, .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        button {
+            padding: 5px 10px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .total {
+            text-align: right;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        .customer-name {
+            margin-bottom: 20px;
+        }
+        .customer-name input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .orders-table {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .orders-table th, .orders-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .orders-table th {
+            background-color: #f5f5f5;
+        }
+        .admin-section {
+            display: none;
+        }
+        .qr-code {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Lanchonete</h1>
+
+        <div class="customer-name">
+            <label for="customerName">Nome do Cliente:</label>
+            <input type="text" id="customerName" placeholder="Digite o nome do cliente">
+        </div>
+
+        <h2>Menu</h2>
+        <div id="menu">
+            <div class="menu-item">
+                <div>
+                    <strong>Hambúrguer</strong><br>
+                    <small>Pão, carne, queijo e salada</small><br>
+                    <strong>R$ 15,00</strong>
+                </div>
+                <button onclick="addToOrder('Hambúrguer', 15.00)">Adicionar</button>
+            </div>
+            <div class="menu-item">
+                <div>
+                    <strong>Batata Frita</strong><br>
+                    <small>Porção média</small><br>
+                    <strong>R$ 8,50</strong>
+                </div>
+                <button onclick="addToOrder('Batata Frita', 8.50)">Adicionar</button>
+            </div>
+            <div class="menu-item">
+                <div>
+                    <strong>Refrigerante</strong><br>
+                    <small>Lata 350ml</small><br>
+                    <strong>R$ 5,00</strong>
+                </div>
+                <button onclick="addToOrder('Refrigerante', 5.00)">Adicionar</button>
+            </div>
+        </div>
+
+        <h2>Pedido</h2>
+        <div id="order">
+            <p>Nenhum item no pedido.</p>
+        </div>
+
+        <div class="total" id="total">
+            Total: R$ 0,00
+        </div>
+
+        <div class="admin-section" id="adminSection">
+            <h2>Planilha de Pedidos</h2>
+            <table class="orders-table" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Item</th>
+                        <th>Preço (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">Nenhum pedido registrado.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button onclick="exportToExcel()">Exportar para Excel</button>
+        </div>
+
+        <div class="qr-code">
+            <h2>QR Code</h2>
+            <img id="qrCodeImage" src="C:\Users\37760485816\Desktop\Nova pasta" alt="QR Code">
+        </div>
+
+        <button onclick="promptAdminPassword()" id="adminToggle">Entrar como Administrador</button>
+    </div>
+
+    <script>
+        let order = [];
+        let isAdmin = false;
+        const adminPassword = "1234"; // Senha do administrador
+
+        function addToOrder(name, price) {
+            const customerName = document.getElementById('customerName').value;
+            if (!customerName) {
+                alert('Por favor, insira o nome do cliente antes de adicionar itens ao pedido.');
+                return;
+            }
+
+            order.push({ customer: customerName, name, price });
+            renderOrder();
+            updateOrdersTable();
+        }
+
+        function removeFromOrder(index) {
+            order.splice(index, 1);
+            renderOrder();
+            updateOrdersTable();
+        }
+
+        function renderOrder() {
+            const orderDiv = document.getElementById('order');
+            const totalDiv = document.getElementById('total');
+
+            if (order.length === 0) {
+                orderDiv.innerHTML = '<p>Nenhum item no pedido.</p>';
+                totalDiv.textContent = 'Total: R$ 0,00';
+                return;
+            }
+
+            orderDiv.innerHTML = '';
+            let total = 0;
+
+            order.forEach((item, index) => {
+                total += item.price;
+                orderDiv.innerHTML += `
+                    <div class="order-item">
+                        <span>${item.name} - R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+                        <button onclick="removeFromOrder(${index})">Remover</button>
+                    </div>
+                `;
+            });
+
+            totalDiv.textContent = `Total: R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        function updateOrdersTable() {
+            const tableBody = document.getElementById('ordersTable').querySelector('tbody');
+
+            if (order.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3">Nenhum pedido registrado.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = '';
+            order.forEach(item => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td>${item.customer}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price.toFixed(2).replace('.', ',')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById('ordersTable');
+            const rows = table.querySelectorAll('tr');
+            let csvContent = '';
+
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('th, td');
+                const rowData = Array.from(cols).map(col => col.innerText).join(',');
+                csvContent += rowData + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'pedidos_lanchonete.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function promptAdminPassword() {
+            const password = prompt('Digite a senha de administrador:');
+            if (password === adminPassword) {
+                toggleAdminAccess();
+            } else {
+                alert('Senha incorreta!');
+            }
+        }
+
+        function toggleAdminAccess() {
+            isAdmin = !isAdmin;
+            const adminSection = document.getElementById('adminSection');
+            const adminToggle = document.getElementById('adminToggle');
+
+            if (isAdmin) {
+                adminSection.style.display = 'block';
+                adminToggle.textContent = 'Sair do Modo Administrador';
+            } else {
+                adminSection.style.display = 'none';
+                adminToggle.textContent = 'Entrar como Administrador';
+            }
+        }
+    </script>
+</body>
+</html>
