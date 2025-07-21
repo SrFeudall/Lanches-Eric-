@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Pedidos - Lancheiros</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #relatorio {
+            white-space: pre-line;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+            font-family: monospace;
+        }
+        .botoes-relatorio {
+            display: flex;
+            gap: 10px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Relatório de Pedidos</h1>
+        <a href="index.html">Voltar para a loja</a>
+    </header>
+
+    <div class="botoes-relatorio">
+        <button onclick="mostrarRelatorio()">Atualizar Relatório</button>
+        <button onclick="exportarParaTXT()">Exportar para TXT</button>
+        <button onclick="limparPedidos()">Limpar Todos os Pedidos</button>
+    </div>
+
+    <div id="relatorio">Clique em "Atualizar Relatório" para ver os pedidos</div>
+
+    <script>
+        function mostrarRelatorio() {
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const relatorioDiv = document.getElementById('relatorio');
+            
+            if (pedidos.length === 0) {
+                relatorioDiv.textContent = "Nenhum pedido registrado ainda.";
+                return;
+            }
+            
+            let relatorio = "RELATÓRIO DE PEDIDOS\n\n";
+            let totalGeral = 0;
+            
+            pedidos.forEach((pedido, index) => {
+                relatorio += `Pedido #${index + 1} - ${pedido.data}\n`;
+                pedido.itens.forEach(item => {
+                    relatorio += `- ${item.nome}: R$ ${item.preco.toFixed(2)}\n`;
+                });
+                relatorio += `Total: R$ ${pedido.total.toFixed(2)}\n\n`;
+                totalGeral += pedido.total;
+            });
+            
+            relatorio += `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}\n`;
+            relatorio += `QUANTIDADE DE PEDIDOS: ${pedidos.length}`;
+            
+            relatorioDiv.textContent = relatorio;
+        }
+        
+        function exportarParaTXT() {
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            if (pedidos.length === 0) {
+                alert('Nenhum pedido para exportar!');
+                return;
+            }
+            
+            let conteudoTXT = "RELATÓRIO DE PEDIDOS - LANCHERIA\n\n";
+            let totalGeral = 0;
+            
+            pedidos.forEach((pedido, index) => {
+                conteudoTXT += `Pedido #${index + 1} - ${pedido.data}\n`;
+                pedido.itens.forEach(item => {
+                    conteudoTXT += `- ${item.nome}: R$ ${item.preco.toFixed(2)}\n`;
+                });
+                conteudoTXT += `Total: R$ ${pedido.total.toFixed(2)}\n\n`;
+                totalGeral += pedido.total;
+            });
+            
+            conteudoTXT += `TOTAL GERAL: R$ ${totalGeral.toFixed(2)}\n`;
+            conteudoTXT += `QUANTIDADE DE PEDIDOS: ${pedidos.length}`;
+            
+            const blob = new Blob([conteudoTXT], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `relatorio_pedidos_${new Date().toLocaleDateString()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        
+        function limparPedidos() {
+            if (confirm('Tem certeza que deseja limpar TODOS os pedidos registrados?')) {
+                localStorage.removeItem('pedidos');
+                document.getElementById('relatorio').textContent = "Pedidos limpos com sucesso!";
+            }
+        }
+        
+        // Mostrar relatório ao carregar a página
+        window.onload = mostrarRelatorio;
+    </script>
+</body>
+</html>
